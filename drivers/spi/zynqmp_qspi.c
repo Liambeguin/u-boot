@@ -147,6 +147,7 @@ struct zynqmp_qspi_platdata {
 	u32 frequency;
 	u32 speed_hz;
 	unsigned int is_dual;
+	bool io_mode;
 	unsigned int tx_rx_mode;
 };
 
@@ -161,6 +162,7 @@ struct zynqmp_qspi_priv {
 	int bytes_to_receive;
 	unsigned int is_inst;
 	unsigned int is_dual;
+	bool io_mode;
 	unsigned int u_page;
 	unsigned int bus;
 	unsigned int stripe;
@@ -206,6 +208,10 @@ static int zynqmp_qspi_ofdata_to_platdata(struct udevice *bus)
 		dev_err(dev, "failed to enable clock\n");
 		return ret;
 	}
+
+	if (fdtdec_get_bool(gd->fdt_blob, bus->of_offset, "has-io-mode"))
+		plat->io_mode = true;
+
 
 	is_dual = fdtdec_get_int(gd->fdt_blob, bus->of_offset, "is-dual", -1);
 	if (is_dual < 0)
@@ -273,9 +279,14 @@ static void zynqmp_qspi_init_hw(struct zynqmp_qspi_priv *priv)
 	config_reg = readl(&regs->confr);
 	config_reg &= ~(ZYNQMP_QSPI_GFIFO_STRT_MODE_MASK |
 			ZYNQMP_QSPI_CONFIG_MODE_EN_MASK);
-	config_reg |= ZYNQMP_QSPI_CONFIG_DMA_MODE |
-		      ZYNQMP_QSPI_GFIFO_WP_HOLD |
+
+	config_reg |= ZYNQMP_QSPI_GFIFO_WP_HOLD |
 		      ZYNQMP_QSPI_DFLT_BAUD_RATE_DIV;
+
+	/* Initialize DMA */
+	if (!priv->io_mode)
+		config_reg |= ZYNQMP_QSPI_CONFIG_DMA_MODE;
+
 	writel(config_reg, &regs->confr);
 
 	writel(ZYNQMP_QSPI_ENABLE_ENABLE_MASK, &regs->enbr);
@@ -469,6 +480,7 @@ static int zynqmp_qspi_probe(struct udevice *bus)
 	priv->regs = plat->regs;
 	priv->dma_regs = plat->dma_regs;
 	priv->is_dual = plat->is_dual;
+	priv->io_mode = plat->io_mode;
 	priv->tx_rx_mode = plat->tx_rx_mode;
 
 	if (priv->is_dual == -1) {
@@ -725,11 +737,104 @@ static int zynqmp_qspi_start_dma(struct zynqmp_qspi_priv *priv,
 	return 0;
 }
 
+/*
+ * zynqmp_qspi_copy_read_data - Copy data to RX buffer
+ * @zqspi:	Pointer to the zynq_qspi structure
+ * @data:	The 32 bit variable where data is stored
+ * @size:	Number of bytes to be copied from data to RX buffer
+ */
+static void zynqmp_qspi_copy_read_data(struct zynqmp_qspi_priv *priv, u32 data, u8 size)
+{
+	u8 byte3;
+
+	if (priv->rx_buf) {
+		switch (size) {
+		case 1:
+			*((u8 *)priv->rx_buf) = data;
+			priv->rx_buf += 1;
+			break;
+		case 2:
+			*((u8 *)priv->rx_buf) = data;
+			priv->rx_buf += 1;
+			*((u8 *)priv->rx_buf) = (u8)(data >> 8);
+			priv->rx_buf += 1;
+			break;
+		case 3:
+			*((u8 *)priv->rx_buf) = data;
+			priv->rx_buf += 1;
+			*((u8 *)priv->rx_buf) = (u8)(data >> 8);
+			priv->rx_buf += 1;
+			byte3 = (u8)(data >> 16);
+			*((u8 *)priv->rx_buf) = byte3;
+			priv->rx_buf += 1;
+			break;
+		case 4:
+			/* Can not assume word aligned buffer */
+			memcpy(priv->rx_buf, &data, size);
+			priv->rx_buf += 4;
+			break;
+		default:
+			/* This will never execute */
+			break;
+		}
+	}
+	priv->bytes_to_receive -= size;
+	if (priv->bytes_to_receive < 0)
+		priv->bytes_to_receive = 0;
+}
+/* read rxd register thar contains the data received from the flash device */
+static int zynqmp_qspi_readrxfifo(struct zynqmp_qspi_priv *priv,
+				  u32 gen_fifo_cmd)
+{
+	u32 data, len;
+	int timeout;
+	u32 intr_status;
+	struct zynqmp_qspi_regs *regs = priv->regs;
+
+	debug("%s\n", __func__);
+
+	/* flush rx fifo */
+	writel((1 << 2), &regs->gqfifoctrl);
+
+	while ((priv->bytes_to_receive > 0)) {
+		len = priv->bytes_to_receive > 4 ? 4 : priv->bytes_to_receive;
+
+		/* ask for data */
+		gen_fifo_cmd &= ~(0xFF);
+		gen_fifo_cmd |= (len / 4 + 1) * 4;
+		zynqmp_qspi_fill_gen_fifo(priv, gen_fifo_cmd);
+		printf("GFIFO_CMD_RX: 0x%x\n", gen_fifo_cmd);
+
+		/* check if data is available */
+		timeout = ZYNQMP_QSPI_TIMEOUT;
+		do {
+			if (--timeout < 0) {
+				printf("%s: Timeout\n", __func__);
+				return -1;
+			}
+			intr_status = readl(&regs->isr);
+		} while (!(intr_status & ZYNQMP_QSPI_IXR_RXNEMTY_MASK));
+		writel(intr_status & ZYNQMP_QSPI_IXR_RXNEMTY_MASK, &regs->isr);
+
+		/* read said data */
+		data = readl(&regs->drxr);
+		zynqmp_qspi_copy_read_data(priv, data, len);
+
+		debug("%s: data 0x%04x rxbuf addr: 0x%08x size %d "
+		      "bytes_to_recv: %d\n", __func__ , data,
+		      (unsigned)(priv->rx_buf), len, priv->bytes_to_receive);
+	}
+
+	return 0;
+}
+
 static int zynqmp_qspi_genfifo_fill_rx(struct zynqmp_qspi_priv *priv)
 {
 	u32 gen_fifo_cmd;
 	u32 *buf;
 	u32 actuallen = priv->len;
+
+	debug("%s\n", __func__);
 
 	gen_fifo_cmd = zynqmp_qspi_bus_select(priv);
 	gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_RX |
@@ -744,6 +849,9 @@ static int zynqmp_qspi_genfifo_fill_rx(struct zynqmp_qspi_priv *priv)
 
 	if (priv->stripe)
 		gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_STRIPE_MASK;
+
+	if (priv->io_mode)
+		return zynqmp_qspi_readrxfifo(priv, gen_fifo_cmd);
 
 	/*
 	 * Check if receive buffer is aligned to 4 byte and length
@@ -764,6 +872,10 @@ static int zynqmp_qspi_genfifo_fill_rx(struct zynqmp_qspi_priv *priv)
 static int zynqmp_qspi_start_transfer(struct zynqmp_qspi_priv *priv)
 {
 	int ret = 0;
+	debug("%s\n", __func__);
+
+	priv->bytes_to_transfer = priv->len;
+	priv->bytes_to_receive = priv->len;
 
 	if (priv->is_inst) {
 		if (priv->tx_buf)
