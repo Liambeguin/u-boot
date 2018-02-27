@@ -786,7 +786,7 @@ static void zynqmp_qspi_copy_read_data(struct zynqmp_qspi_priv *priv, u32 data, 
 static int zynqmp_qspi_readrxfifo(struct zynqmp_qspi_priv *priv,
 				  u32 gen_fifo_cmd)
 {
-	u32 data, len;
+	u32 data, len, c = 0;
 	int timeout;
 	u32 intr_status;
 	struct zynqmp_qspi_regs *regs = priv->regs;
@@ -794,7 +794,13 @@ static int zynqmp_qspi_readrxfifo(struct zynqmp_qspi_priv *priv,
 	debug("%s\n", __func__);
 
 	/* flush rx fifo */
-	writel((1 << 2), &regs->gqfifoctrl);
+	while (readl(&regs->isr) & ZYNQMP_QSPI_IXR_RXNEMTY_MASK) {
+		c++;
+		data = readl(&regs->drxr);
+	}
+	if (c > 0)
+		printf("  -- flush: %d\n", c);
+
 
 	while ((priv->bytes_to_receive > 0)) {
 		len = priv->bytes_to_receive > 4 ? 4 : priv->bytes_to_receive;
