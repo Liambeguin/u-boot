@@ -21,79 +21,89 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define ZYNQMP_QSPI_GFIFO_STRT_MODE_MASK	(1 << 29)
-#define ZYNQMP_QSPI_CONFIG_MODE_EN_MASK	(3 << 30)
-#define ZYNQMP_QSPI_CONFIG_DMA_MODE	(2 << 30)
-#define ZYNQMP_QSPI_CONFIG_CPHA_MASK	(1 << 2)
-#define ZYNQMP_QSPI_CONFIG_CPOL_MASK	(1 << 1)
+/*
+ * GQSPI CFG Register bit Masks and Default values
+ */
+#define GQSPI_CFG_CPOL_MASK		(1 <<  1)
+#define GQSPI_CFG_CPHA_MASK		(1 <<  2)
+#define GQSPI_CFG_BAUD_DIV_MASK		(7 <<  3)
+#define GQSPI_CFG_WP_HOLD_MASK		(1 << 19)
+#define GQSPI_CFG_EN_POLL_TO_MASK	(1 << 20)
+#define GQSPI_CFG_ENDIAN_MASK		(1 << 26)
+#define GQSPI_CFG_START_GEN_FIFO_MASK	(2 << 28)
+#define GQSPI_CFG_GFIFO_STRT_MODE_MASK	(1 << 29)
+#define GQSPI_CFG_MODE_EN_MASK		(3 << 30)
 
-/* QSPI MIO's count for different connection topologies */
-#define ZYNQMP_QSPI_MIO_NUM_QSPI0		6
-#define ZYNQMP_QSPI_MIO_NUM_QSPI1		5
-#define ZYNQMP_QSPI_MIO_NUM_QSPI1_CS	1
+#define GQSPI_DFLT_BAUD_RATE_DIV	(1 <<  3)
+#define GQSPI_CFG_DMA_MODE		(2 << 30)
 
 /*
- * QSPI Interrupt Registers bit Masks
+ * GQSPI FIFO CTRL Register bit Masks
+ */
+#define GQSPI_FIFOCTRL_RST_GF_MASK	(1 << 0) /* Reset Generic FIFO */
+#define GQSPI_FIFOCTRL_RST_TX_MASK	(1 << 1) /* Reset Transmit FIFO */
+#define GQSPI_FIFOCTRL_RST_RX_MASK	(1 << 2) /* Reset Receive FIFO */
+
+/*
+ * GQSPI Interrupt Registers bit Masks
  *
  * All the four interrupt registers (Status/Mask/Enable/Disable) have the same
  * bit definitions.
  */
-#define ZYNQMP_QSPI_IXR_TXNFULL_MASK	0x00000004 /* QSPI TX FIFO Overflow */
-#define ZYNQMP_QSPI_IXR_TXFULL_MASK	0x00000008 /* QSPI TX FIFO is full */
-#define ZYNQMP_QSPI_IXR_RXNEMTY_MASK	0x00000010 /* QSPI RX FIFO Not Empty */
-#define ZYNQMP_QSPI_IXR_GFEMTY_MASK	0x00000080 /* QSPI Generic FIFO Empty */
-#define ZYNQMP_QSPI_IXR_ALL_MASK	(ZYNQMP_QSPI_IXR_TXNFULL_MASK | \
-					ZYNQMP_QSPI_IXR_RXNEMTY_MASK)
+#define GQSPI_IXR_TXNFULL_MASK	(1 <<  2) /* QSPI TX FIFO not full */
+#define GQSPI_IXR_TXFULL_MASK	(1 <<  3) /* QSPI TX FIFO is full */
+#define GQSPI_IXR_RXNEMPTY_MASK	(1 <<  4) /* QSPI RX FIFO Not Empty */
+#define GQSPI_IXR_RXFULL_MASK	(1 <<  5) /* QSPI RX FIFO Full */
+#define GQSPI_IXR_GFEMPTY_MASK	(1 <<  7) /* QSPI Generic FIFO Empty */
+#define GQSPI_IXR_TXEMPTY_MASK	(1 <<  8) /* QSPI TX FIFO Empty */
+#define GQSPI_IXR_GFNFULL_MASK	(1 <<  9) /* QSPI Generic FIFO Not Full */
+#define GQSPI_IXR_GFFULL_MASK	(1 << 10) /* QSPI Generic FIFO is Full */
+#define GQSPI_IXR_RXEMPTY_MASK	(1 << 11) /* QSPI RX FIFO is Empty */
 
 /*
  * QSPI Enable Register bit Masks
  *
  * This register is used to enable or disable the QSPI controller
  */
-#define ZYNQMP_QSPI_ENABLE_ENABLE_MASK	0x00000001 /* QSPI Enable Bit Mask */
+#define GQSPI_ENABLE_ENABLE_MASK	0x00000001 /* QSPI Enable Bit Mask */
 
-#define ZYNQMP_QSPI_GFIFO_LOW_BUS		(1 << 14)
-#define ZYNQMP_QSPI_GFIFO_CS_LOWER	(1 << 12)
-#define ZYNQMP_QSPI_GFIFO_UP_BUS		(1 << 15)
-#define ZYNQMP_QSPI_GFIFO_CS_UPPER	(1 << 13)
-#define ZYNQMP_QSPI_SPI_MODE_QSPI		(3 << 10)
-#define ZYNQMP_QSPI_SPI_MODE_SPI		(1 << 10)
-#define ZYNQMP_QSPI_SPI_MODE_DUAL_SPI		(2 << 10)
-#define ZYNQMP_QSPI_IMD_DATA_CS_ASSERT	5
-#define ZYNQMP_QSPI_IMD_DATA_CS_DEASSERT	5
-#define ZYNQMP_QSPI_GFIFO_TX		(1 << 16)
-#define ZYNQMP_QSPI_GFIFO_RX		(1 << 17)
-#define ZYNQMP_QSPI_GFIFO_STRIPE_MASK	(1 << 18)
-#define ZYNQMP_QSPI_GFIFO_IMD_MASK	0xFF
-#define ZYNQMP_QSPI_GFIFO_EXP_MASK	(1 << 9)
-#define ZYNQMP_QSPI_GFIFO_DATA_XFR_MASK	(1 << 8)
-#define ZYNQMP_QSPI_STRT_GEN_FIFO		(1 << 28)
-#define ZYNQMP_QSPI_GEN_FIFO_STRT_MOD	(1 << 29)
-#define ZYNQMP_QSPI_GFIFO_WP_HOLD		(1 << 19)
-#define ZYNQMP_QSPI_BAUD_DIV_MASK	(7 << 3)
-#define ZYNQMP_QSPI_DFLT_BAUD_RATE_DIV	(1 << 3)
-#define ZYNQMP_QSPI_GFIFO_ALL_INT_MASK	0xFBE
-#define ZYNQMP_QSPI_DMA_DST_I_STS_DONE	(1 << 1)
-#define ZYNQMP_QSPI_DMA_DST_I_STS_MASK	0xFE
-#define MODEBITS	0x6
+#define GQSPI_GFIFO_LOW_BUS		(1 << 14)
+#define GQSPI_GFIFO_CS_LOWER		(1 << 12)
+#define GQSPI_GFIFO_UP_BUS		(1 << 15)
+#define GQSPI_GFIFO_CS_UPPER		(1 << 13)
+#define GQSPI_SPI_MODE_QSPI		(3 << 10)
+#define GQSPI_SPI_MODE_SPI		(1 << 10)
+#define GQSPI_SPI_MODE_DUAL_SPI		(2 << 10)
+#define GQSPI_IMD_DATA_CS_ASSERT	5
+#define GQSPI_IMD_DATA_CS_DEASSERT	5
+#define GQSPI_GFIFO_TX			(1 << 16)
+#define GQSPI_GFIFO_RX			(1 << 17)
+#define GQSPI_GFIFO_STRIPE_MASK		(1 << 18)
+#define GQSPI_GFIFO_IMD_MASK		0xFF
+#define GQSPI_GFIFO_EXP_MASK		(1 << 9)
+#define GQSPI_GFIFO_DATA_XFR_MASK	(1 << 8)
+#define GQSPI_GFIFO_ALL_INT_MASK	0xFBE
+#define GQSPI_DMA_DST_I_STS_DONE	(1 << 1)
+#define GQSPI_DMA_DST_I_STS_MASK	0xFE
+#define MODEBITS			0x6
 
 #define QUAD_OUT_READ_CMD		0x6B
 #define QUAD_PAGE_PROGRAM_CMD		0x32
 #define DUAL_OUTPUT_FASTRD_CMD		0x3B
 
-#define ZYNQMP_QSPI_GFIFO_SELECT		(1 << 0)
+#define GQSPI_GFIFO_SELECT		(1 << 0)
 
-#define ZYNQMP_QSPI_FIFO_THRESHOLD 1
+#define GQSPI_FIFO_THRESHOLD 1
 
 #define SPI_XFER_ON_BOTH	0
 #define SPI_XFER_ON_LOWER	1
 #define SPI_XFER_ON_UPPER	2
 
-#define ZYNQMP_QSPI_DMA_ALIGN	0x4
-#define ZYNQMP_QSPI_MAX_BAUD_RATE_VAL	7
-#define ZYNQMP_QSPI_DFLT_BAUD_RATE_VAL	2
+#define GQSPI_DMA_ALIGN	0x4
+#define GQSPI_MAX_BAUD_RATE_VAL	7
+#define GQSPI_DFLT_BAUD_RATE_VAL	2
 
-#define ZYNQMP_QSPI_TIMEOUT	100000000
+#define GQSPI_TIMEOUT	100000000
 
 /* QSPI register offsets */
 struct zynqmp_qspi_regs {
@@ -264,21 +274,21 @@ static void zynqmp_qspi_init_hw(struct zynqmp_qspi_priv *priv)
 	u32 config_reg;
 	struct zynqmp_qspi_regs *regs = priv->regs;
 
-	writel(ZYNQMP_QSPI_GFIFO_SELECT, &regs->gqspisel);
-	writel(ZYNQMP_QSPI_GFIFO_ALL_INT_MASK, &regs->idisr);
-	writel(ZYNQMP_QSPI_FIFO_THRESHOLD, &regs->txftr);
-	writel(ZYNQMP_QSPI_FIFO_THRESHOLD, &regs->rxftr);
-	writel(ZYNQMP_QSPI_GFIFO_ALL_INT_MASK, &regs->isr);
+	writel(GQSPI_GFIFO_SELECT, &regs->gqspisel);
+	writel(GQSPI_GFIFO_ALL_INT_MASK, &regs->idisr);
+	writel(GQSPI_FIFO_THRESHOLD, &regs->txftr);
+	writel(GQSPI_FIFO_THRESHOLD, &regs->rxftr);
+	writel(GQSPI_GFIFO_ALL_INT_MASK, &regs->isr);
 
 	config_reg = readl(&regs->confr);
-	config_reg &= ~(ZYNQMP_QSPI_GFIFO_STRT_MODE_MASK |
-			ZYNQMP_QSPI_CONFIG_MODE_EN_MASK);
-	config_reg |= ZYNQMP_QSPI_CONFIG_DMA_MODE |
-		      ZYNQMP_QSPI_GFIFO_WP_HOLD |
-		      ZYNQMP_QSPI_DFLT_BAUD_RATE_DIV;
+	config_reg &= ~(GQSPI_CFG_GFIFO_STRT_MODE_MASK |
+			GQSPI_CFG_MODE_EN_MASK);
+	config_reg |= GQSPI_CFG_DMA_MODE |
+		      GQSPI_CFG_WP_HOLD |
+		      GQSPI_DFLT_BAUD_RATE_DIV;
 	writel(config_reg, &regs->confr);
 
-	writel(ZYNQMP_QSPI_ENABLE_ENABLE_MASK, &regs->enbr);
+	writel(GQSPI_ENABLE_ENABLE_MASK, &regs->enbr);
 }
 
 static u32 zynqmp_qspi_bus_select(struct zynqmp_qspi_priv *priv)
@@ -287,27 +297,27 @@ static u32 zynqmp_qspi_bus_select(struct zynqmp_qspi_priv *priv)
 
 	if (priv->is_dual == SF_DUAL_PARALLEL_FLASH) {
 		if (priv->bus == SPI_XFER_ON_BOTH)
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_LOW_BUS |
-					 ZYNQMP_QSPI_GFIFO_UP_BUS |
-					 ZYNQMP_QSPI_GFIFO_CS_UPPER |
-					 ZYNQMP_QSPI_GFIFO_CS_LOWER;
+			gqspi_fifo_reg = GQSPI_GFIFO_LOW_BUS |
+					 GQSPI_GFIFO_UP_BUS |
+					 GQSPI_GFIFO_CS_UPPER |
+					 GQSPI_GFIFO_CS_LOWER;
 		else if (priv->bus == SPI_XFER_ON_LOWER)
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_LOW_BUS |
-					 ZYNQMP_QSPI_GFIFO_CS_UPPER |
-					 ZYNQMP_QSPI_GFIFO_CS_LOWER;
+			gqspi_fifo_reg = GQSPI_GFIFO_LOW_BUS |
+					 GQSPI_GFIFO_CS_UPPER |
+					 GQSPI_GFIFO_CS_LOWER;
 		else if (priv->bus == SPI_XFER_ON_UPPER)
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_UP_BUS |
-					 ZYNQMP_QSPI_GFIFO_CS_LOWER |
-					 ZYNQMP_QSPI_GFIFO_CS_UPPER;
+			gqspi_fifo_reg = GQSPI_GFIFO_UP_BUS |
+					 GQSPI_GFIFO_CS_LOWER |
+					 GQSPI_GFIFO_CS_UPPER;
 		else
 			debug("Wrong Bus selection:0x%x\n", priv->bus);
 	} else {
 		if (priv->u_page)
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_LOW_BUS |
-					 ZYNQMP_QSPI_GFIFO_CS_UPPER;
+			gqspi_fifo_reg = GQSPI_GFIFO_LOW_BUS |
+					 GQSPI_GFIFO_CS_UPPER;
 		else
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_LOW_BUS |
-					 ZYNQMP_QSPI_GFIFO_CS_LOWER;
+			gqspi_fifo_reg = GQSPI_GFIFO_LOW_BUS |
+					 GQSPI_GFIFO_CS_LOWER;
 	}
 	return gqspi_fifo_reg;
 }
@@ -320,7 +330,7 @@ static void zynqmp_qspi_fill_gen_fifo(struct zynqmp_qspi_priv *priv,
 
 	do {
 		reg = readl(&regs->isr);
-	} while (!(reg & ZYNQMP_QSPI_IXR_GFEMTY_MASK));
+	} while (!(reg & GQSPI_IXR_GFEMPTY_MASK));
 
 	writel(gqspi_fifo_reg, &regs->genfifo);
 }
@@ -331,17 +341,17 @@ static void zynqmp_qspi_chipselect(struct zynqmp_qspi_priv *priv, int is_on)
 
 	if (is_on) {
 		gqspi_fifo_reg = zynqmp_qspi_bus_select(priv);
-		gqspi_fifo_reg |= ZYNQMP_QSPI_SPI_MODE_SPI |
-				  ZYNQMP_QSPI_IMD_DATA_CS_ASSERT;
+		gqspi_fifo_reg |= GQSPI_SPI_MODE_SPI |
+				  GQSPI_IMD_DATA_CS_ASSERT;
 	} else {
 		if (priv->is_dual == SF_DUAL_PARALLEL_FLASH)
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_UP_BUS |
-					 ZYNQMP_QSPI_GFIFO_LOW_BUS;
+			gqspi_fifo_reg = GQSPI_GFIFO_UP_BUS |
+					 GQSPI_GFIFO_LOW_BUS;
 		else if (priv->u_page)
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_UP_BUS;
+			gqspi_fifo_reg = GQSPI_GFIFO_UP_BUS;
 		else
-			gqspi_fifo_reg = ZYNQMP_QSPI_GFIFO_LOW_BUS;
-		gqspi_fifo_reg |= ZYNQMP_QSPI_IMD_DATA_CS_DEASSERT;
+			gqspi_fifo_reg = GQSPI_GFIFO_LOW_BUS;
+		gqspi_fifo_reg |= GQSPI_IMD_DATA_CS_DEASSERT;
 	}
 
 	debug("GFIFO_CMD_CS: 0x%x\n", gqspi_fifo_reg);
@@ -424,19 +434,19 @@ static int zynqmp_qspi_set_speed(struct udevice *bus, uint speed)
 	confr = readl(&regs->confr);
 	if (speed == 0) {
 		/* Set baudrate x8, if the freq is 0 */
-		baud_rate_val = ZYNQMP_QSPI_DFLT_BAUD_RATE_VAL;
+		baud_rate_val = GQSPI_DFLT_BAUD_RATE_VAL;
 	} else if (plat->speed_hz != speed) {
 		while ((baud_rate_val < 8) &&
 		       ((plat->frequency /
 		       (2 << baud_rate_val)) > speed))
 			baud_rate_val++;
 
-		if (baud_rate_val > ZYNQMP_QSPI_MAX_BAUD_RATE_VAL)
-			baud_rate_val = ZYNQMP_QSPI_DFLT_BAUD_RATE_VAL;
+		if (baud_rate_val > GQSPI_MAX_BAUD_RATE_VAL)
+			baud_rate_val = GQSPI_DFLT_BAUD_RATE_VAL;
 
 		plat->speed_hz = plat->frequency / (2 << baud_rate_val);
 	}
-	confr &= ~ZYNQMP_QSPI_BAUD_DIV_MASK;
+	confr &= ~GQSPI_CFG_BAUD_DIV_MASK;
 	confr |= (baud_rate_val << 3);
 	writel(confr, &regs->confr);
 
@@ -492,13 +502,13 @@ static int zynqmp_qspi_set_mode(struct udevice *bus, uint mode)
 	debug("%s\n", __func__);
 	/* Set the SPI Clock phase and polarities */
 	confr = readl(&regs->confr);
-	confr &= ~(ZYNQMP_QSPI_CONFIG_CPHA_MASK |
-		   ZYNQMP_QSPI_CONFIG_CPOL_MASK);
+	confr &= ~(GQSPI_CFG_CPHA_MASK |
+		   GQSPI_CFG_CPOL_MASK);
 
 	if (priv->mode & SPI_CPHA)
-		confr |= ZYNQMP_QSPI_CONFIG_CPHA_MASK;
+		confr |= GQSPI_CFG_CPHA_MASK;
 	if (priv->mode & SPI_CPOL)
-		confr |= ZYNQMP_QSPI_CONFIG_CPOL_MASK;
+		confr |= GQSPI_CFG_CPOL_MASK;
 
 	//writel(confr, &regs->confr);
 	priv->mode = mode;
@@ -512,7 +522,7 @@ static int zynqmp_qspi_set_mode(struct udevice *bus, uint mode)
 static int zynqmp_qspi_fill_tx_fifo(struct zynqmp_qspi_priv *priv, u32 size)
 {
 	u32 data;
-	u32 timeout = ZYNQMP_QSPI_TIMEOUT;
+	u32 timeout = GQSPI_TIMEOUT;
 	struct zynqmp_qspi_regs *regs = priv->regs;
 	u32 *buf = (u32 *)priv->tx_buf;
 	u32 len = size;
@@ -522,7 +532,7 @@ static int zynqmp_qspi_fill_tx_fifo(struct zynqmp_qspi_priv *priv, u32 size)
 
 	while (size && timeout) {
 		if (readl(&regs->isr) &
-			ZYNQMP_QSPI_IXR_TXNFULL_MASK) {
+			GQSPI_IXR_TXNFULL_MASK) {
 			if (size >= 4) {
 				writel(*buf, &regs->txd0r);
 				buf++;
@@ -575,14 +585,14 @@ static void zynqmp_qspi_genfifo_cmd(struct zynqmp_qspi_priv *priv)
 
 	while (priv->len) {
 		gen_fifo_cmd = zynqmp_qspi_bus_select(priv);
-		gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_TX;
+		gen_fifo_cmd |= GQSPI_GFIFO_TX;
 
 		if (command) {
 			command = 0;
 			last_cmd = *(u8 *)priv->tx_buf;
 		}
 
-		gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_SPI;
+		gen_fifo_cmd |= GQSPI_SPI_MODE_SPI;
 		gen_fifo_cmd |= *(u8 *)priv->tx_buf;
 		bytecount++;
 		priv->len--;
@@ -595,14 +605,14 @@ static void zynqmp_qspi_genfifo_cmd(struct zynqmp_qspi_priv *priv)
 
 	if (priv->dummy_bytes) {
 		gen_fifo_cmd = zynqmp_qspi_bus_select(priv);
-		gen_fifo_cmd &= ~(ZYNQMP_QSPI_GFIFO_TX | ZYNQMP_QSPI_GFIFO_RX);
+		gen_fifo_cmd &= ~(GQSPI_GFIFO_TX | GQSPI_GFIFO_RX);
 		if (priv->tx_rx_mode & SPI_RX_QUAD)
-			gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_QSPI;
+			gen_fifo_cmd |= GQSPI_SPI_MODE_QSPI;
 		else if (priv->tx_rx_mode & SPI_RX_DUAL)
-			gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_DUAL_SPI;
+			gen_fifo_cmd |= GQSPI_SPI_MODE_DUAL_SPI;
 		else
-			gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_SPI;
-		gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_DATA_XFR_MASK;
+			gen_fifo_cmd |= GQSPI_SPI_MODE_SPI;
+		gen_fifo_cmd |= GQSPI_GFIFO_DATA_XFR_MASK;
 		gen_fifo_cmd |= (priv->dummy_bytes * 8);
 		zynqmp_qspi_fill_gen_fifo(priv, gen_fifo_cmd);
 	}
@@ -617,16 +627,16 @@ static u32 zynqmp_qspi_calc_exp(struct zynqmp_qspi_priv *priv,
 	while (1) {
 		if (priv->len > 255) {
 			if (priv->len & (1 << expval)) {
-				*gen_fifo_cmd &= ~ZYNQMP_QSPI_GFIFO_IMD_MASK;
-				*gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_EXP_MASK;
+				*gen_fifo_cmd &= ~GQSPI_GFIFO_IMD_MASK;
+				*gen_fifo_cmd |= GQSPI_GFIFO_EXP_MASK;
 				*gen_fifo_cmd |= expval;
 				priv->len -= (1 << expval);
 				return expval;
 			}
 			expval++;
 		} else {
-			*gen_fifo_cmd &= ~(ZYNQMP_QSPI_GFIFO_IMD_MASK |
-					  ZYNQMP_QSPI_GFIFO_EXP_MASK);
+			*gen_fifo_cmd &= ~(GQSPI_GFIFO_IMD_MASK |
+					  GQSPI_GFIFO_EXP_MASK);
 			*gen_fifo_cmd |= (u8)priv->len;
 			len = (u8)priv->len;
 			priv->len  = 0;
@@ -642,16 +652,16 @@ static int zynqmp_qspi_genfifo_fill_tx(struct zynqmp_qspi_priv *priv)
 	int ret = 0;
 
 	gen_fifo_cmd = zynqmp_qspi_bus_select(priv);
-	gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_TX |
-			ZYNQMP_QSPI_GFIFO_DATA_XFR_MASK;
+	gen_fifo_cmd |= GQSPI_GFIFO_TX |
+			GQSPI_GFIFO_DATA_XFR_MASK;
 
 	if (priv->stripe)
-		gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_STRIPE_MASK;
+		gen_fifo_cmd |= GQSPI_GFIFO_STRIPE_MASK;
 
 	if (last_cmd == QUAD_PAGE_PROGRAM_CMD)
-		gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_QSPI;
+		gen_fifo_cmd |= GQSPI_SPI_MODE_QSPI;
 	else
-		gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_SPI;
+		gen_fifo_cmd |= GQSPI_SPI_MODE_SPI;
 
 	while (priv->len) {
 		len = zynqmp_qspi_calc_exp(priv, &gen_fifo_cmd);
@@ -659,7 +669,7 @@ static int zynqmp_qspi_genfifo_fill_tx(struct zynqmp_qspi_priv *priv)
 
 		debug("GFIFO_CMD_TX:0x%x\n", gen_fifo_cmd);
 
-		if (gen_fifo_cmd & ZYNQMP_QSPI_GFIFO_EXP_MASK)
+		if (gen_fifo_cmd & GQSPI_GFIFO_EXP_MASK)
 			ret = zynqmp_qspi_fill_tx_fifo(priv,
 						       1 << len);
 		else
@@ -677,20 +687,20 @@ static int zynqmp_qspi_start_dma(struct zynqmp_qspi_priv *priv,
 {
 	u32 addr;
 	u32 size, len;
-	u32 timeout = ZYNQMP_QSPI_TIMEOUT;
+	u32 timeout = GQSPI_TIMEOUT;
 	u32 actuallen = priv->len;
 	struct zynqmp_qspi_dma_regs *dma_regs = priv->dma_regs;
 
 	writel((unsigned long)buf, &dma_regs->dmadst);
 	writel(roundup(priv->len, 4), &dma_regs->dmasize);
-	writel(ZYNQMP_QSPI_DMA_DST_I_STS_MASK, &dma_regs->dmaier);
+	writel(GQSPI_DMA_DST_I_STS_MASK, &dma_regs->dmaier);
 	addr = (unsigned long)buf;
 	size = roundup(priv->len, ARCH_DMA_MINALIGN);
 	flush_dcache_range(addr, addr+size);
 
 	while (priv->len) {
 		len = zynqmp_qspi_calc_exp(priv, &gen_fifo_cmd);
-		if (!(gen_fifo_cmd & ZYNQMP_QSPI_GFIFO_EXP_MASK) &&
+		if (!(gen_fifo_cmd & GQSPI_GFIFO_EXP_MASK) &&
 		    (len % 4)) {
 			gen_fifo_cmd &= ~(0xFF);
 			gen_fifo_cmd |= (len/4 + 1) * 4;
@@ -702,8 +712,8 @@ static int zynqmp_qspi_start_dma(struct zynqmp_qspi_priv *priv,
 
 	while (timeout) {
 		if (readl(&dma_regs->dmaisr) &
-		    ZYNQMP_QSPI_DMA_DST_I_STS_DONE) {
-			writel(ZYNQMP_QSPI_DMA_DST_I_STS_DONE,
+		    GQSPI_DMA_DST_I_STS_DONE) {
+			writel(GQSPI_DMA_DST_I_STS_DONE,
 			       &dma_regs->dmaisr);
 			break;
 		}
@@ -732,31 +742,31 @@ static int zynqmp_qspi_genfifo_fill_rx(struct zynqmp_qspi_priv *priv)
 	u32 actuallen = priv->len;
 
 	gen_fifo_cmd = zynqmp_qspi_bus_select(priv);
-	gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_RX |
-			ZYNQMP_QSPI_GFIFO_DATA_XFR_MASK;
+	gen_fifo_cmd |= GQSPI_GFIFO_RX |
+			GQSPI_GFIFO_DATA_XFR_MASK;
 
 	if (last_cmd == QUAD_OUT_READ_CMD)
-		gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_QSPI;
+		gen_fifo_cmd |= GQSPI_SPI_MODE_QSPI;
 	else if (last_cmd == DUAL_OUTPUT_FASTRD_CMD)
-		gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_DUAL_SPI;
+		gen_fifo_cmd |= GQSPI_SPI_MODE_DUAL_SPI;
 	else
-		gen_fifo_cmd |= ZYNQMP_QSPI_SPI_MODE_SPI;
+		gen_fifo_cmd |= GQSPI_SPI_MODE_SPI;
 
 	if (priv->stripe)
-		gen_fifo_cmd |= ZYNQMP_QSPI_GFIFO_STRIPE_MASK;
+		gen_fifo_cmd |= GQSPI_GFIFO_STRIPE_MASK;
 
 	/*
 	 * Check if receive buffer is aligned to 4 byte and length
 	 * is multiples of four byte as we are using dma to receive.
 	 */
-	if (!((unsigned long)priv->rx_buf & (ZYNQMP_QSPI_DMA_ALIGN - 1)) &&
-	    !(actuallen % ZYNQMP_QSPI_DMA_ALIGN)) {
+	if (!((unsigned long)priv->rx_buf & (GQSPI_DMA_ALIGN - 1)) &&
+	    !(actuallen % GQSPI_DMA_ALIGN)) {
 		buf = (u32 *)priv->rx_buf;
 		return zynqmp_qspi_start_dma(priv, gen_fifo_cmd, buf);
 	}
 
 	ALLOC_CACHE_ALIGN_BUFFER(u8, tmp, roundup(priv->len,
-						  ZYNQMP_QSPI_DMA_ALIGN));
+						  GQSPI_DMA_ALIGN));
 	buf = (u32 *)tmp;
 	return zynqmp_qspi_start_dma(priv, gen_fifo_cmd, buf);
 }
@@ -824,7 +834,7 @@ static int zynqmp_qspi_claim_bus(struct udevice *dev)
 	struct zynqmp_qspi_regs *regs = priv->regs;
 
 	debug("%s\n", __func__);
-	writel(ZYNQMP_QSPI_ENABLE_ENABLE_MASK, &regs->enbr);
+	writel(GQSPI_ENABLE_ENABLE_MASK, &regs->enbr);
 
 	return 0;
 }
@@ -836,7 +846,7 @@ static int zynqmp_qspi_release_bus(struct udevice *dev)
 	struct zynqmp_qspi_regs *regs = priv->regs;
 
 	debug("%s\n", __func__);
-	writel(~ZYNQMP_QSPI_ENABLE_ENABLE_MASK, &regs->enbr);
+	writel(~GQSPI_ENABLE_ENABLE_MASK, &regs->enbr);
 
 	return 0;
 }
