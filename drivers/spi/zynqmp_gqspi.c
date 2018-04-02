@@ -190,20 +190,41 @@ static void zynqmp_qspi_init_hw(struct zynqmp_qspi_priv *priv)
 	u32 config_reg;
 	struct zynqmp_qspi_regs *regs = priv->regs;
 
+	/* Select the GQSPI Mode */
 	writel(GQSPI_GFIFO_SELECT, &regs->gqspisel);
+
 	writel(GQSPI_GFIFO_ALL_INT_MASK, &regs->idisr);
 	writel(GQSPI_FIFO_THRESHOLD, &regs->txftr);
 	writel(GQSPI_FIFO_THRESHOLD, &regs->rxftr);
 	writel(GQSPI_GFIFO_ALL_INT_MASK, &regs->isr);
 
+	/* Disable the GQSPI */
+	writel(0x00, &regs->enbr);
 	config_reg = readl(&regs->confr);
-	config_reg &= ~(GQSPI_GFIFO_STRT_MODE_MASK |
-			GQSPI_CONFIG_MODE_EN_MASK);
-	config_reg |= GQSPI_CONFIG_DMA_MODE |
-		      GQSPI_GFIFO_WP_HOLD |
-		      GQSPI_DFLT_BAUD_RATE_DIV;
+	/* Set IO Mode */
+	config_reg &= ~GQSPI_CFG_MODE_EN_MASK;
+	/* Start Manual mode */
+	/* config_reg |= GQSPI_CFG_GFIFO_STRT_MODE_MASK; */
+	/* Little endian by default */
+	config_reg &= ~GQSPI_CFG_ENDIAN_MASK;
+	/* Disable poll timeout */
+	config_reg &= ~GQSPI_CFG_EN_POLL_TO_MASK;
+	/* Set Hold bit */
+	config_reg |= GQSPI_CFG_WP_HOLD_MASK;
+	/* Clear prescaler */
+	config_reg &= ~GQSPI_CFG_BAUD_DIV_MASK;
+	/* Clear CPHA */
+	config_reg &= ~GQSPI_CFG_CPHA_MASK;
+	/* Clear CPOL */
+	config_reg &= ~GQSPI_CFG_CPOL_MASK;
 	writel(config_reg, &regs->confr);
 
+	/* clear all FIFOs */
+	writel(GQSPI_FIFOCTRL_RST_RX_MASK |
+	       GQSPI_FIFOCTRL_RST_TX_MASK |
+	       GQSPI_FIFOCTRL_RST_GF_MASK, &regs->gqfifoctrl);
+
+	/* Enable the GQSPI */
 	writel(GQSPI_ENABLE_ENABLE_MASK, &regs->enbr);
 }
 
